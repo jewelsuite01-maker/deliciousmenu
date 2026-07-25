@@ -13,11 +13,8 @@ import {
 } from './firebase-config.js';
 
 let allMenuItems = [];
-let currentView = 'full'; // 'full' or 'visual'
 
-// ==========================================
-// 1. REAL-TIME MENU LISTENER
-// ==========================================
+// Real-Time Firebase Listener
 onSnapshot(menuCollectionRef, (snapshot) => {
   allMenuItems = snapshot.docs.map(docSnap => ({
     id: docSnap.id,
@@ -29,33 +26,22 @@ onSnapshot(menuCollectionRef, (snapshot) => {
   renderAdminList();
 });
 
-// ==========================================
-// 2. VIEW TAB TOGGLING
-// ==========================================
-const tabFullMenu = document.getElementById('tabFullMenu');
-const tabVisualMenu = document.getElementById('tabVisualMenu');
-const fullMenuView = document.getElementById('full-menu-view');
-const visualMenuView = document.getElementById('visual-menu-view');
-
-tabFullMenu?.addEventListener('click', () => {
-  currentView = 'full';
-  tabFullMenu.classList.add('active');
-  tabVisualMenu.classList.remove('active');
-  fullMenuView.style.display = 'block';
-  visualMenuView.style.display = 'none';
+// View Switching (Full vs Visual)
+document.getElementById('tabFullMenu')?.addEventListener('click', () => {
+  document.getElementById('tabFullMenu').classList.add('active');
+  document.getElementById('tabVisualMenu').classList.remove('active');
+  document.getElementById('full-menu-view').style.display = 'block';
+  document.getElementById('visual-menu-view').style.display = 'none';
 });
 
-tabVisualMenu?.addEventListener('click', () => {
-  currentView = 'visual';
-  tabVisualMenu.classList.add('active');
-  tabFullMenu.classList.remove('active');
-  visualMenuView.style.display = 'block';
-  fullMenuView.style.display = 'none';
+document.getElementById('tabVisualMenu')?.addEventListener('click', () => {
+  document.getElementById('tabVisualMenu').classList.add('active');
+  document.getElementById('tabFullMenu').classList.remove('active');
+  document.getElementById('visual-menu-view').style.display = 'block';
+  document.getElementById('full-menu-view').style.display = 'none';
 });
 
-// ==========================================
-// 3. RENDER TEXT-ONLY FULL MENU (NO IMAGES OR SEARCH FILTER)
-// ==========================================
+// View 1: Text-Only Full Menu
 function renderFullTextMenu() {
   const container = document.getElementById('text-categories-container');
   if (!container) return;
@@ -64,11 +50,10 @@ function renderFullTextMenu() {
   container.innerHTML = '';
 
   if (activeItems.length === 0) {
-    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No items currently available.</p>`;
+    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes currently available.</p>`;
     return;
   }
 
-  // Group by category
   const categories = {};
   activeItems.forEach(item => {
     if (!categories[item.category]) categories[item.category] = [];
@@ -77,7 +62,7 @@ function renderFullTextMenu() {
 
   for (const [category, items] of Object.entries(categories)) {
     const categoryGroup = document.createElement('div');
-    categoryGroup.className = 'category-group open'; // Default open for easy scanning
+    categoryGroup.className = 'category-group open';
 
     categoryGroup.innerHTML = `
       <div class="category-header">
@@ -89,7 +74,7 @@ function renderFullTextMenu() {
           <div style="border-bottom: 1px solid var(--gold-border); padding: 12px 0; display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
               <h3 style="color: var(--gold-solid); font-size: 1.1rem; margin-bottom: 4px;">${item.name}</h3>
-              <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 4px;">${item.description}</p>
+              <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 6px;">${item.description}</p>
               <div class="item-tags">
                 ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
               </div>
@@ -110,9 +95,7 @@ function renderFullTextMenu() {
   }
 }
 
-// ==========================================
-// 4. RENDER VISUAL MENU (WITH IMAGES & FILTER)
-// ==========================================
+// View 2: Visual Card Menu with Images & Filter
 function renderVisualMenu(filteredItems = null) {
   const itemsToRender = (filteredItems || allMenuItems).filter(item => item.isAvailable);
   const container = document.getElementById('categories-container');
@@ -121,7 +104,7 @@ function renderVisualMenu(filteredItems = null) {
   container.innerHTML = '';
 
   if (itemsToRender.length === 0) {
-    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes available matching your selection.</p>`;
+    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes match the selected ingredients.</p>`;
     return;
   }
 
@@ -170,21 +153,18 @@ function renderVisualMenu(filteredItems = null) {
   }
 }
 
-// INGREDIENT FILTER FOR VISUAL VIEW
+// Ingredient Filter
 document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
   const query = e.target.value.toLowerCase().trim();
-  
   if (!query) {
     renderVisualMenu();
     return;
   }
 
   const searchTerms = query.split(',').map(term => term.trim()).filter(Boolean);
-  
   const filtered = allMenuItems.filter(item => {
     if (!item.isAvailable) return false;
     const itemIngredients = (item.ingredients || []).map(i => i.toLowerCase());
-    
     return searchTerms.every(term => 
       itemIngredients.some(ing => ing.includes(term)) || 
       item.name.toLowerCase().includes(term)
@@ -194,13 +174,10 @@ document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
   renderVisualMenu(filtered);
 });
 
-// ==========================================
-// 5. ADMIN DASHBOARD - MANAGE ITEMS
-// ==========================================
+// Admin Item Management
 function renderAdminList() {
   const adminContainer = document.getElementById('admin-items-list');
   if (!adminContainer) return;
-
   adminContainer.innerHTML = '';
 
   allMenuItems.forEach(item => {
@@ -250,8 +227,8 @@ function populateEditForm(id) {
 function resetForm() {
   document.getElementById('menuForm').reset();
   document.getElementById('editItemId').value = "";
-  document.getElementById('form-title').innerText = "Add New Item Manually";
-  document.getElementById('save-btn').innerText = "Save Item";
+  document.getElementById('form-title').innerText = "Add New Menu Item";
+  document.getElementById('save-btn').innerText = "Upload Item";
   document.getElementById('cancel-edit-btn').style.display = "none";
 }
 
@@ -296,7 +273,7 @@ async function deleteMenuItem(id) {
   }
 }
 
-// BULK UPLOAD
+// Bulk Upload Excel/CSV
 document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => {
   const fileInput = document.getElementById('bulkFileInput');
   const file = fileInput.files[0];
@@ -375,7 +352,7 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => 
   XLSX.writeFile(workbook, "menu_bulk_upload_sample.csv");
 });
 
-// AUTHENTICATION
+// Admin Auth Setup
 const authModal = document.getElementById('auth-modal');
 
 document.getElementById('openAuthModalBtn')?.addEventListener('click', () => {
