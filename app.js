@@ -13,6 +13,7 @@ import {
 } from './firebase-config.js';
 
 let allMenuItems = [];
+let currentView = 'full'; // 'full' or 'visual'
 
 // ==========================================
 // 1. REAL-TIME MENU LISTENER
@@ -23,14 +24,96 @@ onSnapshot(menuCollectionRef, (snapshot) => {
     ...docSnap.data()
   }));
 
-  renderCustomerMenu();
+  renderFullTextMenu();
+  renderVisualMenu();
   renderAdminList();
 });
 
 // ==========================================
-// 2. RENDER CUSTOMER MENU (Accordion Grouped)
+// 2. VIEW TAB TOGGLING
 // ==========================================
-function renderCustomerMenu(filteredItems = null) {
+const tabFullMenu = document.getElementById('tabFullMenu');
+const tabVisualMenu = document.getElementById('tabVisualMenu');
+const fullMenuView = document.getElementById('full-menu-view');
+const visualMenuView = document.getElementById('visual-menu-view');
+
+tabFullMenu?.addEventListener('click', () => {
+  currentView = 'full';
+  tabFullMenu.classList.add('active');
+  tabVisualMenu.classList.remove('active');
+  fullMenuView.style.display = 'block';
+  visualMenuView.style.display = 'none';
+});
+
+tabVisualMenu?.addEventListener('click', () => {
+  currentView = 'visual';
+  tabVisualMenu.classList.add('active');
+  tabFullMenu.classList.remove('active');
+  visualMenuView.style.display = 'block';
+  fullMenuView.style.display = 'none';
+});
+
+// ==========================================
+// 3. RENDER TEXT-ONLY FULL MENU (NO IMAGES OR SEARCH FILTER)
+// ==========================================
+function renderFullTextMenu() {
+  const container = document.getElementById('text-categories-container');
+  if (!container) return;
+
+  const activeItems = allMenuItems.filter(item => item.isAvailable);
+  container.innerHTML = '';
+
+  if (activeItems.length === 0) {
+    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No items currently available.</p>`;
+    return;
+  }
+
+  // Group by category
+  const categories = {};
+  activeItems.forEach(item => {
+    if (!categories[item.category]) categories[item.category] = [];
+    categories[item.category].push(item);
+  });
+
+  for (const [category, items] of Object.entries(categories)) {
+    const categoryGroup = document.createElement('div');
+    categoryGroup.className = 'category-group open'; // Default open for easy scanning
+
+    categoryGroup.innerHTML = `
+      <div class="category-header">
+        <h2 class="category-title gold-text">${category}</h2>
+        <span class="category-toggle-icon">▼</span>
+      </div>
+      <div class="items-container" style="display: block; padding: 15px 20px;">
+        ${items.map(item => `
+          <div style="border-bottom: 1px solid var(--gold-border); padding: 12px 0; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <h3 style="color: var(--gold-solid); font-size: 1.1rem; margin-bottom: 4px;">${item.name}</h3>
+              <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 4px;">${item.description}</p>
+              <div class="item-tags">
+                ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
+              </div>
+            </div>
+            <span class="item-weight" style="white-space: nowrap; margin-left: 15px;">${item.weight}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    categoryGroup.querySelector('.category-header').addEventListener('click', () => {
+      categoryGroup.classList.toggle('open');
+      const itemsBox = categoryGroup.querySelector('.items-container');
+      itemsBox.style.display = categoryGroup.classList.contains('open') ? 'block' : 'none';
+    });
+
+    container.appendChild(categoryGroup);
+  }
+}
+
+// ==========================================
+// 4. RENDER VISUAL MENU (WITH IMAGES & FILTER)
+// ==========================================
+function renderVisualMenu(filteredItems = null) {
   const itemsToRender = (filteredItems || allMenuItems).filter(item => item.isAvailable);
   const container = document.getElementById('categories-container');
   if (!container) return;
@@ -42,16 +125,14 @@ function renderCustomerMenu(filteredItems = null) {
     return;
   }
 
-  // Group items by category
   const categories = {};
   itemsToRender.forEach(item => {
     if (!categories[item.category]) categories[item.category] = [];
     categories[item.category].push(item);
   });
 
-  // Render Category Accordions
   for (const [category, items] of Object.entries(categories)) {
-    const isOpen = filteredItems ? 'open' : ''; // Stay expanded when filtering
+    const isOpen = filteredItems ? 'open' : '';
     const categoryGroup = document.createElement('div');
     categoryGroup.className = `category-group ${isOpen}`;
 
@@ -81,7 +162,6 @@ function renderCustomerMenu(filteredItems = null) {
       </div>
     `;
 
-    // Category click toggle event
     categoryGroup.querySelector('.category-header').addEventListener('click', () => {
       categoryGroup.classList.toggle('open');
     });
@@ -90,14 +170,12 @@ function renderCustomerMenu(filteredItems = null) {
   }
 }
 
-// ==========================================
-// 3. INGREDIENT FILTER LOGIC
-// ==========================================
+// INGREDIENT FILTER FOR VISUAL VIEW
 document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
   const query = e.target.value.toLowerCase().trim();
   
   if (!query) {
-    renderCustomerMenu();
+    renderVisualMenu();
     return;
   }
 
@@ -107,18 +185,17 @@ document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
     if (!item.isAvailable) return false;
     const itemIngredients = (item.ingredients || []).map(i => i.toLowerCase());
     
-    // Dish must match ALL search terms (ingredients or dish name)
     return searchTerms.every(term => 
       itemIngredients.some(ing => ing.includes(term)) || 
       item.name.toLowerCase().includes(term)
     );
   });
 
-  renderCustomerMenu(filtered);
+  renderVisualMenu(filtered);
 });
 
 // ==========================================
-// 4. ADMIN DASHBOARD - RENDER & MANAGE ITEMS
+// 5. ADMIN DASHBOARD - MANAGE ITEMS
 // ==========================================
 function renderAdminList() {
   const adminContainer = document.getElementById('admin-items-list');
@@ -143,7 +220,6 @@ function renderAdminList() {
       </div>
     `;
 
-    // Attach Event Listeners dynamically
     card.querySelector('.edit-btn').addEventListener('click', () => populateEditForm(item.id));
     card.querySelector('.delete-btn').addEventListener('click', () => deleteMenuItem(item.id));
 
@@ -151,7 +227,6 @@ function renderAdminList() {
   });
 }
 
-// Populate Edit Form
 function populateEditForm(id) {
   const item = allMenuItems.find(i => i.id === id);
   if (!item) return;
@@ -172,7 +247,6 @@ function populateEditForm(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Reset Admin Form
 function resetForm() {
   document.getElementById('menuForm').reset();
   document.getElementById('editItemId').value = "";
@@ -183,7 +257,6 @@ function resetForm() {
 
 document.getElementById('cancel-edit-btn')?.addEventListener('click', resetForm);
 
-// Save or Update Single Item
 document.getElementById('menuForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -212,7 +285,6 @@ document.getElementById('menuForm')?.addEventListener('submit', async (e) => {
   }
 });
 
-// Delete Menu Item
 async function deleteMenuItem(id) {
   if (confirm("Are you sure you want to delete this menu item?")) {
     try {
@@ -224,9 +296,7 @@ async function deleteMenuItem(id) {
   }
 }
 
-// ==========================================
-// 5. BULK EXCEL / CSV UPLOAD LOGIC
-// ==========================================
+// BULK UPLOAD
 document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => {
   const fileInput = document.getElementById('bulkFileInput');
   const file = fileInput.files[0];
@@ -286,7 +356,6 @@ document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => 
   reader.readAsArrayBuffer(file);
 });
 
-// Download Sample Template
 document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => {
   const sampleData = [
     {
@@ -297,15 +366,6 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => 
       ingredients: "Paneer, Garlic, Spices, Butter",
       image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500&q=80",
       isAvailable: "TRUE"
-    },
-    {
-      category: "Main Course",
-      name: "Garlic Naan",
-      weight: "1 Piece",
-      description: "Butter garlic refined flour bread",
-      ingredients: "Garlic, Butter, Flour",
-      image: "https://images.unsplash.com/photo-1619535860434-ba1d8fa12536?w=500&q=80",
-      isAvailable: "TRUE"
     }
   ];
 
@@ -315,9 +375,7 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => 
   XLSX.writeFile(workbook, "menu_bulk_upload_sample.csv");
 });
 
-// ==========================================
-// 6. ADMIN AUTHENTICATION
-// ==========================================
+// AUTHENTICATION
 const authModal = document.getElementById('auth-modal');
 
 document.getElementById('openAuthModalBtn')?.addEventListener('click', () => {
@@ -346,7 +404,6 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
   logoutAdmin();
 });
 
-// Listen to Login/Logout state changes automatically
 onAdminAuthStateChange((user) => {
   const menuSec = document.getElementById('menu-section');
   const adminSec = document.getElementById('admin-section');
