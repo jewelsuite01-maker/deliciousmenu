@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
 
-  <!-- SheetJS Library for Excel & CSV parsing -->
+  <!-- SheetJS Library for Bulk Excel / CSV Upload -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <link rel="stylesheet" href="app.css" />
@@ -20,7 +20,8 @@
   <!-- App Header -->
   <header class="app-header">
     <h1 class="app-title gold-text">ROYAL MENU</h1>
-    <button class="admin-trigger-btn" onclick="openAdminAuth()" title="Admin Login">🔑</button>
+    <!-- Tiny Admin Login Trigger Icon -->
+    <button class="admin-trigger-btn" id="openAuthModalBtn" title="Admin Login">🔑</button>
   </header>
 
   <!-- CUSTOMER MENU VIEW -->
@@ -29,6 +30,7 @@
       <input type="text" id="ingredientSearch" placeholder="Filter by ingredients (e.g., Paneer, Garlic)..." />
     </div>
 
+    <!-- Dynamic Categories Container -->
     <div id="categories-container">
       <p style="text-align:center; color: var(--gold-solid);">Loading royal menu...</p>
     </div>
@@ -37,7 +39,7 @@
   <!-- ADMIN AUTH MODAL -->
   <div id="auth-modal" class="modal">
     <div class="modal-content admin-card">
-      <span class="close-btn" onclick="closeAdminAuth()">&times;</span>
+      <span class="close-btn" id="closeAuthModalBtn">&times;</span>
       <h2 class="gold-text" style="text-align:center; margin-bottom: 15px;">Admin Login</h2>
       <form id="loginForm">
         <div class="form-group">
@@ -57,26 +59,26 @@
   <section id="admin-section" class="section">
     <div class="admin-header-bar">
       <h2 class="gold-text">Admin Dashboard</h2>
-      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <!-- BULK UPLOAD EXCEL / CSV CARD -->
+    <!-- BULK UPLOAD CARD -->
     <div class="admin-card" style="margin-bottom: 30px;">
       <h3 class="gold-text" style="margin-bottom: 10px;">Bulk Upload via Excel / CSV</h3>
       <p style="font-size:0.85rem; color:#aaa; margin-bottom: 15px;">
-        Upload a file with columns: <strong>category, name, weight, description, ingredients, image, isAvailable</strong>.
+        Columns required: <strong>category, name, weight, description, ingredients, image, isAvailable</strong>.
       </p>
 
       <div class="bulk-upload-zone">
         <input type="file" id="bulkFileInput" accept=".csv, .xlsx, .xls" />
         <div class="bulk-btn-group">
-          <button class="submit-btn" onclick="handleBulkUpload()">Upload File to Firebase</button>
-          <button class="cancel-btn" onclick="downloadSampleTemplate()">Download Sample CSV</button>
+          <button type="button" class="submit-btn" id="bulkUploadBtn">Upload File to Firebase</button>
+          <button type="button" class="cancel-btn" id="downloadTemplateBtn">Download Sample CSV</button>
         </div>
       </div>
     </div>
 
-    <!-- SINGLE ITEM FORM -->
+    <!-- SINGLE ITEM ADD/EDIT FORM -->
     <div class="admin-card">
       <h3 class="gold-text" id="form-title" style="margin-bottom: 15px;">Add New Item Manually</h3>
       <form id="menuForm">
@@ -120,17 +122,17 @@
 
         <div class="form-actions">
           <button type="submit" class="submit-btn" id="save-btn">Save Item</button>
-          <button type="button" class="cancel-btn" id="cancel-edit-btn" onclick="resetForm()" style="display:none;">Cancel Edit</button>
+          <button type="button" class="cancel-btn" id="cancel-edit-btn" style="display:none;">Cancel Edit</button>
         </div>
       </form>
     </div>
 
-    <!-- Admin Manage List -->
+    <!-- ADMIN MANAGE ITEMS GRID -->
     <h3 class="gold-text" style="margin: 30px 0 15px 0; text-align:center;">Manage Existing Menu Items</h3>
     <div id="admin-items-list" class="admin-items-grid"></div>
   </section>
 
-  <!-- Load Firebase & Main App Logic -->
+  <!-- Load Main JavaScript Application -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
