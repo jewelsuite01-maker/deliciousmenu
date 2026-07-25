@@ -13,6 +13,7 @@ import {
 } from './firebase-config.js';
 
 let allMenuItems = [];
+let selectedCategory = 'ALL';
 
 // Real-Time Firebase Listener
 onSnapshot(menuCollectionRef, (snapshot) => {
@@ -21,6 +22,7 @@ onSnapshot(menuCollectionRef, (snapshot) => {
     ...docSnap.data()
   }));
 
+  renderCategoryPills();
   renderFullTextMenu();
   renderVisualMenu();
   renderAdminList();
@@ -41,16 +43,50 @@ document.getElementById('tabVisualMenu')?.addEventListener('click', () => {
   document.getElementById('full-menu-view').style.display = 'none';
 });
 
+// Render Top Category Buttons/Pills
+function renderCategoryPills() {
+  const container = document.getElementById('category-pills-bar');
+  if (!container) return;
+
+  const activeItems = allMenuItems.filter(item => item.isAvailable);
+  const categories = ['ALL', ...new Set(activeItems.map(item => item.category))];
+
+  container.innerHTML = categories.map(cat => `
+    <button class="pill-btn ${selectedCategory === cat ? 'active' : ''}" data-category="${cat}">
+      ${cat}
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.pill-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      selectedCategory = e.target.getAttribute('data-category');
+      
+      // Highlight Active Pill
+      container.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+
+      // Re-render Views with Selected Category
+      renderFullTextMenu();
+      renderVisualMenu();
+    });
+  });
+}
+
 // View 1: Text-Only Full Menu
 function renderFullTextMenu() {
   const container = document.getElementById('text-categories-container');
   if (!container) return;
 
-  const activeItems = allMenuItems.filter(item => item.isAvailable);
+  let activeItems = allMenuItems.filter(item => item.isAvailable);
+  
+  if (selectedCategory !== 'ALL') {
+    activeItems = activeItems.filter(item => item.category === selectedCategory);
+  }
+
   container.innerHTML = '';
 
   if (activeItems.length === 0) {
-    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes currently available.</p>`;
+    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes currently available under this category.</p>`;
     return;
   }
 
@@ -72,14 +108,17 @@ function renderFullTextMenu() {
       <div class="items-container" style="display: block; padding: 15px 20px;">
         ${items.map(item => `
           <div style="border-bottom: 1px solid var(--gold-border); padding: 12px 0; display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <h3 style="color: var(--gold-solid); font-size: 1.1rem; margin-bottom: 4px;">${item.name}</h3>
+            <div style="flex-grow: 1; padding-right: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h3 style="color: var(--gold-solid); font-size: 1.1rem;">${item.name}</h3>
+                <span class="item-weight">${item.weight}</span>
+              </div>
               <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 6px;">${item.description}</p>
               <div class="item-tags">
                 ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
               </div>
             </div>
-            <span class="item-weight" style="white-space: nowrap; margin-left: 15px;">${item.weight}</span>
+            <div class="item-price">${item.price || ''}</div>
           </div>
         `).join('')}
       </div>
@@ -95,16 +134,21 @@ function renderFullTextMenu() {
   }
 }
 
-// View 2: Visual Card Menu with Images & Filter
+// View 2: Visual Card Menu
 function renderVisualMenu(filteredItems = null) {
-  const itemsToRender = (filteredItems || allMenuItems).filter(item => item.isAvailable);
+  let itemsToRender = (filteredItems || allMenuItems).filter(item => item.isAvailable);
+
+  if (selectedCategory !== 'ALL' && !filteredItems) {
+    itemsToRender = itemsToRender.filter(item => item.category === selectedCategory);
+  }
+
   const container = document.getElementById('categories-container');
   if (!container) return;
   
   container.innerHTML = '';
 
   if (itemsToRender.length === 0) {
-    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes match the selected ingredients.</p>`;
+    container.innerHTML = `<p style="text-align:center; color: var(--gold-solid); padding: 20px;">No dishes match your selection.</p>`;
     return;
   }
 
@@ -115,7 +159,7 @@ function renderVisualMenu(filteredItems = null) {
   });
 
   for (const [category, items] of Object.entries(categories)) {
-    const isOpen = filteredItems ? 'open' : '';
+    const isOpen = filteredItems || selectedCategory !== 'ALL' ? 'open' : '';
     const categoryGroup = document.createElement('div');
     categoryGroup.className = `category-group ${isOpen}`;
 
@@ -125,23 +169,44 @@ function renderVisualMenu(filteredItems = null) {
         <span class="category-toggle-icon">▼</span>
       </div>
       <div class="items-container">
-        ${items.map(item => `
-          <div class="item-card">
-            <img src="${item.image || 'https://via.placeholder.com/300x180?text=No+Image'}" alt="${item.name}" class="item-image" />
-            <div class="item-content">
-              <div>
-                <div class="item-header">
-                  <h3 class="item-name">${item.name}</h3>
-                  <span class="item-weight">${item.weight}</span>
+        ${items.map(item => {
+          if (item.image && item.image.trim() !== '') {
+            return `
+              <div class="item-card">
+                <img src="${item.image}" alt="${item.name}" class="item-image" />
+                <div class="item-content">
+                  <div>
+                    <div class="item-header">
+                      <h3 class="item-name">${item.name}</h3>
+                      <span class="item-price">${item.price || ''}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;"><span class="item-weight">${item.weight}</span></div>
+                    <p class="item-description">${item.description}</p>
+                  </div>
+                  <div class="item-tags">
+                    ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
+                  </div>
                 </div>
-                <p class="item-description">${item.description}</p>
               </div>
-              <div class="item-tags">
-                ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
+            `;
+          } else {
+            return `
+              <div class="simple-item-row">
+                <div style="flex-grow: 1; padding-right: 15px;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                    <h3 style="color: var(--gold-solid); font-size: 1.1rem;">${item.name}</h3>
+                    <span class="item-weight">${item.weight}</span>
+                  </div>
+                  <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 6px;">${item.description}</p>
+                  <div class="item-tags">
+                    ${(item.ingredients || []).map(ing => `<span class="tag-chip">${ing.trim()}</span>`).join('')}
+                  </div>
+                </div>
+                <div class="item-price">${item.price || ''}</div>
               </div>
-            </div>
-          </div>
-        `).join('')}
+            `;
+          }
+        }).join('')}
       </div>
     `;
 
@@ -153,7 +218,7 @@ function renderVisualMenu(filteredItems = null) {
   }
 }
 
-// Ingredient Filter
+// Ingredient Filter Search
 document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
   const query = e.target.value.toLowerCase().trim();
   if (!query) {
@@ -164,8 +229,10 @@ document.getElementById('ingredientSearch')?.addEventListener('keyup', (e) => {
   const searchTerms = query.split(',').map(term => term.trim()).filter(Boolean);
   const filtered = allMenuItems.filter(item => {
     if (!item.isAvailable) return false;
+    const categoryMatches = selectedCategory === 'ALL' || item.category === selectedCategory;
     const itemIngredients = (item.ingredients || []).map(i => i.toLowerCase());
-    return searchTerms.every(term => 
+    
+    return categoryMatches && searchTerms.every(term => 
       itemIngredients.some(ing => ing.includes(term)) || 
       item.name.toLowerCase().includes(term)
     );
@@ -189,6 +256,7 @@ function renderAdminList() {
           ${item.isAvailable ? 'Visible' : 'Hidden / Unavailable'}
         </span>
         <h4 style="color: var(--gold-solid);">${item.name} (${item.category})</h4>
+        <p style="font-size:0.85rem; color:var(--gold-solid); font-weight:bold;">Price: ${item.price || 'N/A'}</p>
         <p style="font-size:0.8rem; color:#aaa;">Qty: ${item.weight}</p>
       </div>
       <div class="admin-btn-group">
@@ -211,6 +279,7 @@ function populateEditForm(id) {
   document.getElementById('editItemId').value = item.id;
   document.getElementById('categoryName').value = item.category || '';
   document.getElementById('itemName').value = item.name || '';
+  document.getElementById('itemPrice').value = item.price || '';
   document.getElementById('weightQuantity').value = item.weight || '';
   document.getElementById('description').value = item.description || '';
   document.getElementById('ingredients').value = (item.ingredients || []).join(', ');
@@ -241,6 +310,7 @@ document.getElementById('menuForm')?.addEventListener('submit', async (e) => {
   const itemData = {
     category: document.getElementById('categoryName').value.trim(),
     name: document.getElementById('itemName').value.trim(),
+    price: document.getElementById('itemPrice').value.trim(),
     weight: document.getElementById('weightQuantity').value.trim(),
     description: document.getElementById('description').value.trim(),
     ingredients: document.getElementById('ingredients').value.split(',').map(i => i.trim()).filter(Boolean),
@@ -312,6 +382,7 @@ document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => 
           batch.set(newDocRef, {
             category: String(row.category).trim(),
             name: String(row.name).trim(),
+            price: String(row.price || '').trim(),
             weight: String(row.weight || '').trim(),
             description: String(row.description || '').trim(),
             ingredients: ingredientsArray,
@@ -338,6 +409,7 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => 
     {
       category: "Starters",
       name: "Paneer Tikka",
+      price: "₹250",
       weight: "250g",
       description: "Charcoal grilled paneer marinated in spices",
       ingredients: "Paneer, Garlic, Spices, Butter",
@@ -352,7 +424,7 @@ document.getElementById('downloadTemplateBtn')?.addEventListener('click', () => 
   XLSX.writeFile(workbook, "menu_bulk_upload_sample.csv");
 });
 
-// Admin Auth Setup
+// Auth Modal Setup
 const authModal = document.getElementById('auth-modal');
 
 document.getElementById('openAuthModalBtn')?.addEventListener('click', () => {
