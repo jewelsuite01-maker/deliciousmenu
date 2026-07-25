@@ -19,7 +19,7 @@
 
   <!-- App Header -->
   <header class="app-header">
-    <h1 class="app-title gold-text">ROYAL MENU</h1>
+    <h1 class="app-title gold-text">JEWEL'd DELICIOUS MENU</h1>
     <button class="admin-trigger-btn" id="openAuthModalBtn" title="Admin Login">🔑</button>
   </header>
 
@@ -30,6 +30,11 @@
     <div class="nav-tabs">
       <button class="tab-btn active" id="tabFullMenu">Full Menu (Simple)</button>
       <button class="tab-btn" id="tabVisualMenu">With Image & Filter</button>
+    </div>
+
+    <!-- TOP CATEGORIES NAV BAR -->
+    <div id="category-pills-bar" class="category-pills-container">
+      <!-- Category buttons like All, Starters, Main Course generate here -->
     </div>
 
     <!-- VIEW 1: FULL MENU (TEXT ONLY) -->
@@ -84,7 +89,7 @@
     <div class="admin-card" style="margin-bottom: 30px;">
       <h3 class="gold-text" style="margin-bottom: 10px;">Bulk Upload via Excel / CSV</h3>
       <p style="font-size:0.85rem; color:#aaa; margin-bottom: 15px;">
-        Columns required: <strong>category, name, weight, description, ingredients, image, isAvailable</strong>.
+        Columns required: <strong>category, name, price, weight, description, ingredients, image, isAvailable</strong>.
       </p>
 
       <div class="bulk-upload-zone">
@@ -113,6 +118,11 @@
         </div>
 
         <div class="form-group">
+          <label for="itemPrice">Price</label>
+          <input type="text" id="itemPrice" placeholder="e.g., ₹250 or $12" required />
+        </div>
+
+        <div class="form-group">
           <label for="weightQuantity">Weight / Portion Quantity</label>
           <input type="text" id="weightQuantity" placeholder="e.g., 250g, 6 Pieces, 500 ml" required />
         </div>
@@ -128,8 +138,8 @@
         </div>
 
         <div class="form-group">
-          <label for="imageUrl">Image URL</label>
-          <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg" required />
+          <label for="imageUrl">Image URL (Leave empty for simple text view)</label>
+          <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg" />
         </div>
 
         <div class="form-group checkbox-group">
