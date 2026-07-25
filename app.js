@@ -338,7 +338,6 @@ async function deleteMenuItem(id) {
   }
 }
 
-// Bulk Upload Excel/CSV
 // Bulk Upload Excel/CSV (Fixed Price Field Matching)
 document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => {
   const fileInput = document.getElementById('bulkFileInput');
@@ -391,7 +390,7 @@ document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => 
           batch.set(newDocRef, {
             category: String(category).trim(),
             name: String(name).trim(),
-            price: String(priceValue).trim(), // <--- Price fixed here!
+            price: String(priceValue).trim(),
             weight: String(normalizedRow['weight'] || '').trim(),
             description: String(normalizedRow['description'] || '').trim(),
             ingredients: ingredientsArray,
@@ -401,17 +400,6 @@ document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => 
           count++;
         }
       });
-
-      await batch.commit();
-      alert(`Successfully uploaded ${count} items in bulk!`);
-      fileInput.value = '';
-    } catch (err) {
-      alert("Error parsing file: " + err.message);
-    }
-  };
-
-  reader.readAsArrayBuffer(file);
-});
 
       await batch.commit();
       alert(`Successfully uploaded ${count} items in bulk!`);
