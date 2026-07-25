@@ -339,6 +339,7 @@ async function deleteMenuItem(id) {
 }
 
 // Bulk Upload Excel/CSV
+// Bulk Upload Excel/CSV (Fixed Price Field Matching)
 document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => {
   const fileInput = document.getElementById('bulkFileInput');
   const file = fileInput.files[0];
@@ -367,26 +368,50 @@ document.getElementById('bulkUploadBtn')?.addEventListener('click', async () => 
       let count = 0;
 
       jsonData.forEach(row => {
-        if (row.category && row.name) {
+        // Normalize keys to lowercase so Price, price, or PRICE all work!
+        const normalizedRow = {};
+        Object.keys(row).forEach(key => {
+          normalizedRow[key.trim().toLowerCase()] = row[key];
+        });
+
+        const category = normalizedRow['category'];
+        const name = normalizedRow['name'];
+
+        if (category && name) {
           const newDocRef = doc(menuCollectionRef);
           
-          const ingredientsArray = typeof row.ingredients === 'string' 
-            ? row.ingredients.split(',').map(i => i.trim()) 
-            : [String(row.ingredients || '')];
+          const rawIngredients = normalizedRow['ingredients'] || '';
+          const ingredientsArray = typeof rawIngredients === 'string' 
+            ? rawIngredients.split(',').map(i => i.trim()) 
+            : [String(rawIngredients)];
+
+          // Extract price securely
+          const priceValue = normalizedRow['price'] || normalizedRow['item price'] || normalizedRow['itemprice'] || '';
 
           batch.set(newDocRef, {
-            category: String(row.category).trim(),
-            name: String(row.name).trim(),
-            price: String(row.price || '').trim(),
-            weight: String(row.weight || '').trim(),
-            description: String(row.description || '').trim(),
+            category: String(category).trim(),
+            name: String(name).trim(),
+            price: String(priceValue).trim(), // <--- Price fixed here!
+            weight: String(normalizedRow['weight'] || '').trim(),
+            description: String(normalizedRow['description'] || '').trim(),
             ingredients: ingredientsArray,
-            image: String(row.image || '').trim(),
-            isAvailable: row.isAvailable === false || String(row.isAvailable).toLowerCase() === 'false' ? false : true
+            image: String(normalizedRow['image'] || '').trim(),
+            isAvailable: normalizedRow['isavailable'] === false || String(normalizedRow['isavailable']).toLowerCase() === 'false' ? false : true
           });
           count++;
         }
       });
+
+      await batch.commit();
+      alert(`Successfully uploaded ${count} items in bulk!`);
+      fileInput.value = '';
+    } catch (err) {
+      alert("Error parsing file: " + err.message);
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+});
 
       await batch.commit();
       alert(`Successfully uploaded ${count} items in bulk!`);
