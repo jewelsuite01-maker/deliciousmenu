@@ -36,3 +36,21 @@
   border-color: var(--gold-solid);
   font-weight: 700;
 }
+/* Item Price Badge */
+.item-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-solid);
+}
+
+/* Simple Row Layout Inside Visual Menu (When Image is Missing) */
+.simple-item-row {
+  grid-column: 1 / -1;
+  background: var(--bg-card-blue);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
