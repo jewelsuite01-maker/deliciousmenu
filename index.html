@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Royal Gold Digital Menu</title>
+  
+  <!-- Custom Fonts: Playfair Display for Headings, Montserrat for Body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- SheetJS Library for Bulk Excel / CSV Upload -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <h1 class="app-title gold-text">ROYAL MENU</h1>
+    <button class="admin-trigger-btn" id="openAuthModalBtn" title="Admin Login">🔑</button>
+  </header>
+
+  <!-- CUSTOMER MENU SECTION -->
+  <main id="menu-section" class="section active">
+    
+    <!-- Navigation / View Mode Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tabFullMenu">Full Menu (Simple)</button>
+      <button class="tab-btn" id="tabVisualMenu">With Image & Filter</button>
+    </div>
+
+    <!-- VIEW 1: FULL MENU (TEXT ONLY) -->
+    <div id="full-menu-view">
+      <div id="text-categories-container">
+        <p style="text-align:center; color: var(--gold-solid);">Loading royal menu...</p>
+      </div>
+    </div>
+
+    <!-- VIEW 2: VISUAL MENU (WITH IMAGES & INGREDIENT FILTER) -->
+    <div id="visual-menu-view" style="display: none;">
+      <!-- Filter Bar -->
+      <div class="filter-container">
+        <input type="text" id="ingredientSearch" placeholder="Filter by ingredients (e.g., Paneer, Garlic)..." />
+      </div>
+
+      <!-- Dynamic Categories Container -->
+      <div id="categories-container">
+        <p style="text-align:center; color: var(--gold-solid);">Loading royal menu...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ADMIN AUTH MODAL -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content admin-card">
+      <span class="close-btn" id="closeAuthModalBtn">&times;</span>
+      <h2 class="gold-text" style="text-align:center; margin-bottom: 15px;">Admin Login</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="adminEmail">Email</label>
+          <input type="email" id="adminEmail" placeholder="admin@restaurant.com" required />
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="submit-btn">Login to Admin Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD PANEL -->
+  <section id="admin-section" class="section">
+    <div class="admin-header-bar">
+      <h2 class="gold-text">Admin Dashboard</h2>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <!-- BULK UPLOAD EXCEL / CSV CARD -->
+    <div class="admin-card" style="margin-bottom: 30px;">
+      <h3 class="gold-text" style="margin-bottom: 10px;">Bulk Upload via Excel / CSV</h3>
+      <p style="font-size:0.85rem; color:#aaa; margin-bottom: 15px;">
+        Columns required: <strong>category, name, price, weight, description, ingredients, image, isAvailable</strong>.
+      </p>
+
+      <div class="bulk-upload-zone">
+        <input type="file" id="bulkFileInput" accept=".csv, .xlsx, .xls" />
+        <div class="bulk-btn-group">
+          <button type="button" class="submit-btn" id="bulkUploadBtn">Upload File to Firebase</button>
+          <button type="button" class="cancel-btn" id="downloadTemplateBtn">Download Sample CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SINGLE ITEM ADD/EDIT FORM -->
+    <div class="admin-card">
+      <h3 class="gold-text" id="form-title" style="margin-bottom: 15px;">Add New Menu Item</h3>
+      <form id="menuForm">
+        <input type="hidden" id="editItemId" value="" />
+
+        <div class="form-group">
+          <label for="categoryName">Category Name</label>
+          <input type="text" id="categoryName" placeholder="e.g., Starters, Main Course" required />
+        </div>
+
+        <div class="form-group">
+          <label for="itemName">Item Name</label>
+          <input type="text" id="itemName" placeholder="e.g., Garlic Paneer Tikka" required />
+        </div>
+
+        <div class="form-group">
+          <label for="itemPrice">Price</label>
+          <input type="text" id="itemPrice" placeholder="e.g., ₹250 or $12" required />
+        </div>
+
+        <div class="form-group">
+          <label for="weightQuantity">Weight / Portion Quantity</label>
+          <input type="text" id="weightQuantity" placeholder="e.g., 250g, 6 Pieces, 500 ml" required />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" placeholder="Grilled cottage cheese tossed in butter and roasted garlic"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="ingredients">Ingredients / Tags (Comma-Separated)</label>
+          <input type="text" id="ingredients" placeholder="e.g., Paneer, Garlic, Butter, Spices" required />
+        </div>
+
+        <div class="form-group">
+          <label for="imageUrl">Image URL (Leave empty for simple text view)</label>
+          <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg" />
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label for="isAvailable" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="isAvailable" checked /> Available for Customers
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="submit-btn" id="save-btn">Upload Item</button>
+          <button type="button" class="cancel-btn" id="cancel-edit-btn" style="display:none;">Cancel Edit</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ADMIN MANAGE ITEMS GRID -->
+    <h3 class="gold-text" style="margin: 30px 0 15px 0; text-align:center;">Manage Existing Menu Items</h3>
+    <div id="admin-items-list" class="admin-items-grid"></div>
+  </section>
+
+  <!-- Load Main JavaScript Application -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
